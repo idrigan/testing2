@@ -1,8 +1,8 @@
 <?php
 
+namespace Src\Domain;
 
-namespace Domain;
-
+use Doctrine\Instantiator\Exception\InvalidArgumentException;
 
 class Post
 {
@@ -12,32 +12,55 @@ class Post
 
     private $user;
 
-    const ERRORINVALIDTITLE = "El título es mayor de 50 caracteres";
-    const ERRORINVALIDBODY = "El cuerpo tiene mas de 2000 caracteres";
-
-    public function __construct($title, $body, $user)
+    public function __construct($title,$body, $user)
     {
         $this->checkTitle($title);
         $this->checkBody($body);
-
         $this->title = $title;
         $this->body = $body;
+    }
+
+    public function setTitle($title){
+        $this->checkTitle($title);
+        $this->title = $title;
+
+    }
+
+    public function setBody($body){
+       $this->checkBody($body);
+       $this->body = $body;
+    }
+
+    public function setUser($user){
         $this->user = $user;
-
     }
 
-    private function checkTitle($title){
+    public function getBody(){
+        return $this->body;
+    }
 
-        if ( strlen( $title ) > 50 ){
-            throw new \ErrorException(self::ERRORINVALIDTITLE);
+    public function getTitle(){
+        return $this->title;
+    }
+
+    private function checkTitle($title)
+    {
+
+        if (strlen($title) > 50) {
+            throw new InvalidArgumentException(
+                "$title is not a valid email address"
+            );
         }
-    }
 
+    }
 
     private function checkBody($body){
 
         if ( strlen ( $body ) > 2000 ){
-            throw new \ErrorException(self::ERRORINVALIDBODY);
+            throw new InvalidArgumentException(
+                "$body is not a valid email address"
+            );
         }
+
     }
 }

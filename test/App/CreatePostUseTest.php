@@ -3,14 +3,19 @@
 
 namespace Test\App;
 
-use App\CreatePost;
-use Domain\EventQueue;
-use Domain\Post;
-use Domain\PostEvent;
-use Domain\PostRepository;
-use Domain\User;
+require './vendor/autoload.php';
 
-class CreatePostUseTest extends \PHPUnit_Framework_TestCase
+use PHPUnit\Framework\TestCase;
+
+use Src\App\CreatePostUseCase;
+use Src\Domain\EventQueue;
+use Src\Domain\Post;
+use Src\Domain\PostEvent;
+use Src\Domain\PostRepository;
+use Src\Domain\User;
+
+
+class CreatePostUseTest extends TestCase
 {
 
     const EMAIl_VALID = "idrigan@gmail.com";
@@ -28,6 +33,8 @@ class CreatePostUseTest extends \PHPUnit_Framework_TestCase
 
     private $createPostRepository;
 
+    private $createPostUseCase;
+
     private $user;
 
     private $post;
@@ -40,7 +47,7 @@ class CreatePostUseTest extends \PHPUnit_Framework_TestCase
         $this->post = new Post(self::TITLE_VALID,self::BODY_VALID,$this->user);
         $this->createPostRepository = $this->createMock(PostRepository::class);
         $this->eventQueue = $this->createMock(EventQueue::class);
-        $this->createPost = new CreatePost($this->createPostRepository, $this->eventQueue);
+        $this->createPostUseCase = new CreatePostUseCase($this->createPostRepository, $this->eventQueue);
 
 
     }
@@ -53,32 +60,20 @@ class CreatePostUseTest extends \PHPUnit_Framework_TestCase
         $this->newPostUseCase = null;
     }
 
-    public function shouldNoCreateUser(){
-       parent::assertEquals(new User(self::EMAIl_INVALID,self::PASSWORD_VALID),USER::ERRORVALIDEMAIL);
-       parent::assertEquals(new User(self::EMAIl_VALID,self::PASSWORD_INVALID),USER::ERRORLENGTHPASSWORD);
-       parent::assertEquals(new User(self::EMAIl_INVALID,self::PASSWORD_INVALID2),USER::ERRORVALIDPASSWORD);
-    }
-
-    public function shouldNoCreatePost(){
-        parent::assertEquals(new Post(self::TITLE_INVALID,self::BODY_VALID ,USER::ERRORVALIDEMAIL),Post::ERRORINVALIDTITLE);
-        parent::assertEquals(new Post(self::TITLE_VALID,self::BODY_INVALID ,USER::ERRORVALIDEMAIL),Post::ERRORINVALIDBODY);
-    }
-
-
     /** @test */
     public function shouldPersistAPostOneTimeIfItDoesNotExist()
     {
         $this->givenAPostRepositoryThatDoesntHaveASpecificPost();
         $this->thenThePostShouldBeSavedOnce();
-        $this->whenTheNewPostUseCaseIsExecutedWithASpecificPost();
+        $this-> whenTheNewPostIsExecutedWithASpecificPost();
     }
 
     /** @test */
     public function shouldNotPersistAPostIfItAlreadyExists()
     {
-        $this->givenAPostRepositoryThatHasASpecificPost();
-        $this->thenThePostShouldNotBeSaved();
-        $this->whenTheNewPostUseCaseIsExecutedWithASpecificPost();
+        $this->givenAPostRepositoryThatHaveASpecificPost();
+        $this->thenAnEventShouldNotBePublished();
+        $this-> whenTheNewPostIsExecutedWithASpecificPost();
     }
 
     /** @test */
@@ -86,43 +81,41 @@ class CreatePostUseTest extends \PHPUnit_Framework_TestCase
     {
         $this->givenAPostRepositoryThatDoesntHaveASpecificPost();
         $this->thenAnEventShouldBePublished();
-        $this->whenTheNewPostUseCaseIsExecutedWithASpecificPost();
+        $this-> whenTheNewPostIsExecutedWithASpecificPost();
     }
 
     /** @test */
     public function shouldNotPublishANewPostEventIfThePostAlreadyExists()
     {
-        $this->givenAPostRepositoryThatHasASpecificPost();
+        $this->givenAPostRepositoryThatHaveASpecificPost();
         $this->thenAnEventShouldNotBePublished();
-        $this->whenTheNewPostUseCaseIsExecutedWithASpecificPost();
+        $this->whenTheNewPostIsExecutedWithASpecificPost();
     }
 
     /** @test */
     public function shouldPublishANewPostEventIfForcedToPublishAndThePostDoesNotExist()
     {
-        $this->givenAPostRepositoryThatDoesntHaveASpecificPost();
-        $this->thenAnEventShouldBePublished();
-        $this->whenTheNewPostIsExecutedAndForcedToPublishWithASpecificPost();
+        $this->givenAPostRepositoryThatHaveASpecificPost();
+        $this->thenAnEventShouldNotBePublished();
+        $this->whenTheNewPostIsExecutedWithASpecificPost();
     }
 
     /** @test */
     public function shouldNotPublishANewPosEventIfForcedNotToPublishAndThePostDoesNotExist()
     {
         $this->givenAPostRepositoryThatDoesntHaveASpecificPost();
+        $this->thenAnEventShouldBePublished();
+        $this->whenTheNewPostIsExecutedAndForcedToPublishWithASpecificPost();
+    }
+
+    /**
+     * @test
+     */
+    public function shouldNotPublishANewPostEventIfForcedToPublishAndThePostAlreadyExists()
+    {
+        $this->givenAPostRepositoryThatHaveASpecificPost();
         $this->thenAnEventShouldNotBePublished();
         $this->whenTheNewPostIsExecutedAndForcedNotToPublishWithASpecificPost();
-    }
-
-
-
-    private function whenTheNewPostIsExecutedAndForcedToPublishWithASpecificPost()
-    {
-        $this->createPostRepository->execute($this->post, true);
-    }
-
-    private function whenTheNewPostIsExecutedAndForcedNotToPublishWithASpecificPost()
-    {
-        $this->createPostRepository->execute($this->post, false);
     }
 
     private function givenAPostRepositoryThatDoesntHaveASpecificPost()
@@ -130,6 +123,28 @@ class CreatePostUseTest extends \PHPUnit_Framework_TestCase
         $this->createPostRepository
             ->method('checkPost')
             ->willReturn(false);
+    }
+
+    private function givenAPostRepositoryThatHaveASpecificPost()
+    {
+        $this->createPostRepository
+            ->method('checkPost')
+            ->willReturn(true);
+    }
+
+    private function whenTheNewPostIsExecutedWithASpecificPost()
+    {
+        $this->createPostUseCase->execute($this->post);
+    }
+
+    private function whenTheNewPostIsExecutedAndForcedToPublishWithASpecificPost()
+    {
+        $this->createPostUseCase->execute($this->post, true);
+    }
+
+    private function whenTheNewPostIsExecutedAndForcedNotToPublishWithASpecificPost()
+    {
+        $this->createPostUseCase->execute($this->post, false);
     }
 
     private function thenThePostShouldBeSavedOnce()
@@ -161,8 +176,5 @@ class CreatePostUseTest extends \PHPUnit_Framework_TestCase
             ->expects($this->never())
             ->method('publish');
     }
-
-
-
 
 }

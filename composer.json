@@ -11,12 +11,13 @@
     },
     "autoload": {
         "psr-4": {
-            "Src\\": "src/"
+            "Src\\Domain\\": "src/Domain/",
+            "Src\\App\\": "src/App/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "MpwebUnit\\": "test/MpwebUnit/"
+            "Test\\": "test/"
 
         }
     }

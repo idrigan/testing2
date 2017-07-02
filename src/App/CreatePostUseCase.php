@@ -1,14 +1,14 @@
 <?php
 
-namespace App;
+namespace Src\App;
 
 
-use Domain\EventQueue;
-use Domain\Post;
-use Domain\PostEvent;
-use Domain\PostRepository;
+use Src\Domain\EventQueue;
+use Src\Domain\Post;
+use Src\Domain\PostEvent;
+use Src\Domain\PostRepository;
 
-class CreatePost
+class CreatePostUseCase
 {
     private $postRepository;
 
@@ -26,9 +26,14 @@ class CreatePost
     {
         $exists = $this->postRepository->checkPost($post);
         if ($exists == true) return;
+
         $this->postRepository->save($post);
+
         if ($publish == false) return;
+
         $this->eventQueue->publish(new PostEvent($post));
+
     }
 
 }
+

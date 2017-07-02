@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Domain;
+namespace Src\Domain;
 
 
 class PostEvent implements Event

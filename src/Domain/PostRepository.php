@@ -1,8 +1,7 @@
 <?php
 
 
-namespace Domain;
-
+namespace Src\Domain;
 
 interface PostRepository
 {
